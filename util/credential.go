@@ -20,6 +20,17 @@ func SetupCredential(backupType string, credential map[string]string) error {
 	}
 }
 
+func SetupOptions(backupType string, options map[string]string) error {
+	switch backupType {
+	case "nfs":
+		return setupFSMountOptions(options)
+	case "cifs":
+		return setupFSMountOptions(options)
+	default:
+		return nil
+	}
+}
+
 func setupS3Credential(credential map[string]string) error {
 	if credential == nil {
 		return nil
@@ -57,6 +68,17 @@ func setupCIFSCredential(credential map[string]string) error {
 
 	os.Setenv(types.CIFSUsername, credential[types.CIFSUsername])
 	os.Setenv(types.CIFSPassword, credential[types.CIFSPassword])
+
+	return nil
+}
+
+func setupFSMountOptions(opetions map[string]string) error {
+	if opetions == nil {
+		return nil
+	}
+
+	os.Setenv(types.FSTimeo, opetions[types.FSTimeo])
+	os.Setenv(types.FSRetry, opetions[types.FSRetry])
 
 	return nil
 }
@@ -100,6 +122,17 @@ func getCredentialFromEnvVars(backupType string) (map[string]string, error) {
 	}
 }
 
+func getOptionsFromEnvVars(backupType string) (map[string]string, error) {
+	switch backupType {
+	case "nfs":
+		return getFSMountOptionsFromEnvVars()
+	case "cifs":
+		return getFSMountOptionsFromEnvVars()
+	default:
+		return nil, nil
+	}
+}
+
 func getAZBlobCredentialFromEnvVars() (map[string]string, error) {
 	credential := map[string]string{}
 
@@ -121,6 +154,15 @@ func getCIFSCredentialFromEnvVars() (map[string]string, error) {
 	credential[types.CIFSPassword] = os.Getenv(types.CIFSPassword)
 
 	return credential, nil
+}
+
+func getFSMountOptionsFromEnvVars() (map[string]string, error) {
+	options := map[string]string{}
+
+	options[types.FSTimeo] = os.Getenv(types.FSTimeo)
+	options[types.FSRetry] = os.Getenv(types.FSRetry)
+
+	return options, nil
 }
 
 func getS3CredentialFromEnvVars() (map[string]string, error) {
@@ -156,4 +198,13 @@ func GetBackupCredential(backupURL string) (map[string]string, error) {
 	}
 
 	return getCredentialFromEnvVars(backupType)
+}
+
+func GetBackupOptions(backupURL string) (map[string]string, error) {
+	backupType, err := CheckBackupType(backupURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return getOptionsFromEnvVars(backupType)
 }

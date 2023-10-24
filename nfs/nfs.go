@@ -3,6 +3,7 @@ package nfs
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/longhorn/backupstore"
 	"github.com/longhorn/backupstore/fsops"
+	"github.com/longhorn/backupstore/types"
 	"github.com/longhorn/backupstore/util"
 )
 
@@ -24,6 +26,9 @@ var (
 	// Ref: https://github.com/longhorn/backupstore/pull/91
 	defaultMountInterval = 1 * time.Second
 	defaultMountTimeout  = 5 * time.Second
+
+	defaultFSTimeOut = "300"
+	defaultFSRetry   = "2"
 )
 
 type BackupStoreDriver struct {
@@ -97,6 +102,15 @@ func (b *BackupStoreDriver) mount() error {
 
 	retErr := errors.New("cannot mount using NFSv4")
 
+	fs_timeo := os.Getenv(types.FSTimeo)
+	if fs_timeo == "" {
+		fs_timeo = defaultFSTimeOut
+	}
+	fs_retry := os.Getenv(types.FSRetry)
+	if fs_retry == "" {
+		fs_retry = defaultFSRetry
+	}
+
 	for _, version := range MinorVersions {
 		log.Infof("Attempting mount for nfs path %v with nfsvers %v", b.serverPath, version)
 
@@ -104,8 +118,8 @@ func (b *BackupStoreDriver) mount() error {
 			fmt.Sprintf("nfsvers=%v", version),
 			"actimeo=1",
 			"soft",
-			"timeo=300",
-			"retry=2",
+			fmt.Sprintf("timeo=%s", fs_timeo),
+			fmt.Sprintf("retry=%s", fs_retry),
 		}
 		sensitiveMountOptions := []string{}
 
